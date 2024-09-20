@@ -40,6 +40,11 @@ def create_sorted_many_related_manager(superclass, rel, *args, **kwargs):
                 queryset = super().get_queryset()
                 return self._apply_rel_ordering(queryset)
 
+        def get_prefetch_querysets(self, instances, queryset=None):
+            # Apply the same ordering for prefetch ones
+            result = super().get_prefetch_querysets(instances, queryset)
+            return (self._apply_rel_ordering(result[0]),) + result[1:]
+
         def get_prefetch_queryset(self, instances, queryset=None):
             # Apply the same ordering for prefetch ones
             result = super().get_prefetch_queryset(instances, queryset)
@@ -248,7 +253,7 @@ class SortedManyToManyField(_ManyToManyField):
             or self.remote_field.model == cls._meta.object_name
         ):
             self.remote_field.related_name = "%s_rel_+" % name
-        elif self.remote_field.is_hidden():
+        elif self.remote_field.hidden:
             # If the backwards relation is disabled, replace the original
             # related_name with one generated from the m2m field name. Django
             # still uses backwards relations internally and we need to avoid
